@@ -15,6 +15,7 @@
       cart: [],
       config: {
         apiKey: localStorage.getItem('imo_test_apiKey') || 'YOUR_API_KEY_HERE',
+        forcedHost: localStorage.getItem('imo_test_forcedHost') || '',
         userId: localStorage.getItem('imo_test_userId') || '',
         userData: JSON.parse(localStorage.getItem('imo_test_userData') || '{}')
       },
@@ -98,7 +99,11 @@
     </main>
 
     <aside class="lg:col-span-1 lg:sticky lg:top-6 lg:h-[calc(100vh-3rem)] flex flex-col gap-6 p-6 lg:p-0" id="sidebar-area">
-      <div class="border border-gray-200 rounded-lg bg-white"><details class="group" open><summary class="font-semibold cursor-pointer p-4 flex justify-between items-center">Imagino Dev Controls<svg class="w-5 h-5 text-gray-500 transform transition-transform group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></summary><div class="p-4 border-t border-gray-200 space-y-4"><p class="text-xs text-gray-500">Set the API key or override user state for testing.</p><div><label for="api-key-input" class="block text-sm font-medium text-gray-700 mb-1">API Key</label><div class="relative"><input type="password" id="api-key-input" class="w-full p-2 pr-12 border border-gray-300 rounded-md"><button type="button" class="absolute inset-y-0 right-0 px-3 text-sm font-semibold text-gray-600" id="api-key-toggle">Show</button></div></div><div><label for="dev-user-id" class="block text-sm font-medium text-gray-700 mb-1">Force User ID</label><input type="text" id="dev-user-id" class="w-full p-2 border border-gray-300 rounded-md"></div><div><label for="dev-user-name" class="block text-sm font-medium text-gray-700 mb-1">Force User Name</label><input type="text" id="dev-user-name" class="w-full p-2 border border-gray-300 rounded-md"></div><div class="flex justify-end gap-3 pt-2"><button id="clear-storage-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700">Reset All</button><button id="dev-update-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Force Update</button></div></div></details></div>
+      <div class="border border-gray-200 rounded-lg bg-white"><details class="group" open><summary class="font-semibold cursor-pointer p-4 flex justify-between items-center">Imagino Dev Controls<svg class="w-5 h-5 text-gray-500 transform transition-transform group-open:-rotate-180" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></summary><div class="p-4 border-t border-gray-200 space-y-4"><p class="text-xs text-gray-500">Set the API key or override user state for testing.</p><div><label for="api-key-input" class="block text-sm font-medium text-gray-700 mb-1">API Key</label><div class="relative"><input type="password" id="api-key-input" class="w-full p-2 pr-12 border border-gray-300 rounded-md"><button type="button" class="absolute inset-y-0 right-0 px-3 text-sm font-semibold text-gray-600" id="api-key-toggle">Show</button></div></div><div><label for="dev-user-id" class="block text-sm font-medium text-gray-700 mb-1">Force User ID</label><input type="text" id="dev-user-id" class="w-full p-2 border border-gray-300 rounded-md"></div><div><label for="dev-user-name" class="block text-sm font-medium text-gray-700 mb-1">Force User Name</label><input type="text" id="dev-user-name" class="w-full p-2 border border-gray-300 rounded-md"></div><div>
+  <label for="dev-host" class="block text-sm font-medium text-gray-700 mb-1">Force Host</label>
+  <input type="text" id="dev-host" class="w-full p-2 border border-gray-300 rounded-md">
+</div>
+<div class="flex justify-end gap-3 pt-2"><button id="clear-storage-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-700">Reset All</button><button id="dev-update-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Force Update</button></div></div></details></div>
       <div class="bg-gray-800 text-white font-mono text-sm rounded-lg overflow-hidden flex flex-col flex-1"><div class="bg-gray-900/50 p-3 font-bold">Event Log</div><div class="overflow-y-auto p-4 space-y-4" id="event-log-entries"></div></div>
     </aside>
   </div>
@@ -194,7 +199,7 @@
             return;
         }
         const payload = {
-            host: location.hostname,
+            host: appState.config.forcedHost || location.hostname,
             deviceId: appState.deviceId,
             sessionId: appState.sessionId,
             userId: appState.config.userId,
@@ -248,6 +253,7 @@
     function updateUI() {
         apiKeyInput.value = appState.config.apiKey;
         devUserIdInput.value = appState.config.userId;
+        document.getElementById('dev-host').value = appState.config.forcedHost;
         devUserNameInput.value = appState.config.userData.name || '';
         navActionsContainer.innerHTML = '';
         const userStatusEl = document.createElement('div');
@@ -417,6 +423,10 @@
 
     devUpdateBtn.addEventListener('click', () => {
         appState.config.apiKey = apiKeyInput.value.trim();
+        const forcedHostInput = document.getElementById('dev-host');
+appState.config.forcedHost = forcedHostInput.value.trim();
+localStorage.setItem('imo_test_forcedHost', appState.config.forcedHost);
+
         appState.config.userId = devUserIdInput.value.trim();
         appState.config.userData = {
             name: devUserNameInput.value.trim()
@@ -478,7 +488,8 @@
     window.dataLayer.push({
         event: 'page_view',
         page_title: document.title,
-        page_location: location.href
+       page_location: (appState.config.forcedHost ? `https://${appState.config.forcedHost}${location.pathname}` : location.href)
+
     });
 });
 </script>
